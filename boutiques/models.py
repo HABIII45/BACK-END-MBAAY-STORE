@@ -22,6 +22,11 @@ class Boutique(models.Model):
         max_length=180,
         unique=True
     )
+    moyens_paiement = models.ManyToManyField(
+     "categories.MoyenPaiement",
+      blank=True,
+      related_name="boutiques"
+    )
 
     description = models.TextField(
         blank=True
@@ -52,7 +57,24 @@ class Boutique(models.Model):
         blank=True,
         null=True
     )
+    photo_agronome = models.ImageField(
+    upload_to="boutiques/agronomes/",
+    blank=True,
+    null=True
+)
 
+    tiktok = models.URLField(
+    blank=True
+)
+
+    facebook = models.URLField(
+    blank=True
+)
+
+    palette = models.CharField(
+    max_length=50,
+    blank=True
+)
     couleur_principale = models.CharField(
         max_length=20,
         blank=True

@@ -37,6 +37,8 @@ class UniteVente(models.Model):
     )
 
     description = models.TextField(
+    
+    
         blank=True
     )
 

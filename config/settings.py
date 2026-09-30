@@ -15,6 +15,9 @@ from datetime import timedelta
 import os
 from dotenv import load_dotenv
 from datetime import timedelta
+from corsheaders.defaults import default_headers
+
+
 
 load_dotenv()
 
@@ -58,6 +61,7 @@ INSTALLED_APPS = [
     'livraisons',
     'rest_framework',
     "corsheaders",
+    "informations",
     
 ]
 
@@ -148,11 +152,7 @@ STATIC_URL = 'static/'
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
 
-MAILERS = {
-    'default': {
-        'BACKEND': 'django.core.mail.backends.console.EmailBackend',
-    },
-}
+
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
@@ -162,8 +162,8 @@ REST_FRAMEWORK = {
     ),
 }
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+    "ACCESS_TOKEN_LIFETIME": timedelta(hours=4),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
 
     "ROTATE_REFRESH_TOKENS": False,
     "BLACKLIST_AFTER_ROTATION": False,
@@ -174,12 +174,17 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
 ]
-import os
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    "content-type",
+    "authorization",
+    "x-panier-id",
+]
+
 
 PAYDUNYA_MASTER_KEY = os.getenv("PAYDUNYA_MASTER_KEY")
 PAYDUNYA_PRIVATE_KEY = os.getenv("PAYDUNYA_PRIVATE_KEY")
 PAYDUNYA_TOKEN = os.getenv("PAYDUNYA_TOKEN")
-
+PAYDUNYA_STORE_NAME = os.getenv("PAYDUNYA_STORE_NAME", "MBAAY STORE")
 PAYDUNYA_MODE = os.getenv("PAYDUNYA_MODE", "test")
 PAYDUNYA_RETURN_URL = os.getenv(
     "PAYDUNYA_RETURN_URL"
@@ -192,3 +197,24 @@ PAYDUNYA_CANCEL_URL = os.getenv(
 PAYDUNYA_IPN_URL = os.getenv(
     "PAYDUNYA_IPN_URL"
 )
+# =========================================================
+# EMAIL
+# =========================================================
+
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+
+EMAIL_HOST = "smtp.gmail.com"
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
+
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+
+FRONTEND_URL = os.getenv(
+    "FRONTEND_URL",
+    "http://localhost:5173"
+)
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"

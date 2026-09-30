@@ -22,6 +22,11 @@ class UniteVenteViewSet(viewsets.ModelViewSet):
 
 
 class MoyenPaiementViewSet(viewsets.ModelViewSet):
-    queryset = MoyenPaiement.objects.all()
+    
     serializer_class = MoyenPaiementSerializer
     permission_classes = [IsAuthenticated]
+    def get_queryset(self):
+        if self.request.user.role == "ADMIN":
+            return MoyenPaiement.objects.all()
+
+        return MoyenPaiement.objects.filter(active=True)

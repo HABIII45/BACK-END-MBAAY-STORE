@@ -16,6 +16,8 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path,include
+from django.conf import settings
+from django.conf.urls.static import static
 
 
 
@@ -28,8 +30,16 @@ urlpatterns = [
     path("api/livraisons/", include("livraisons.urls")),
     path("api/abonnements/", include("abonnements.urls")),
     path("api/paiements/", include("paiements.urls")),
-    
+    path("api/produits/", include("produits.urls")),
+    path("api/paniers/", include("paniers.urls"),),
+    path("api/livraison/", include("livraisons.urls"),),
+    path("api/commandes/",include("commandes.urls")),
+    path("api/informations-agricoles/",include("informations.urls")),
     
 ]
+urlpatterns += static(
+    settings.MEDIA_URL,
+    document_root=settings.MEDIA_ROOT
+)
 
 

@@ -49,3 +49,4 @@ class AdminLoginSerializer(serializers.Serializer):
         attrs["access"] = refresh.access_token
 
         return attrs
+    

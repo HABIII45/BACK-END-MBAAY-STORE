@@ -15,17 +15,11 @@ class Paiement(models.Model):
         ("ANNULE", "Annulé"),
     ]
 
-    MOYEN_CHOICES = [
-        ("WAVE", "Wave"),
-        ("ORANGE_MONEY", "Orange Money"),
-        ("FREE_MONEY", "Free Money"),
-        ("EXPRESSO", "Expresso"),
-        ("CARTE", "Carte bancaire"),
-    ]
-
     utilisateur = models.ForeignKey(
         "utilisateurs.Utilisateur",
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         related_name="paiements"
     )
 
@@ -35,6 +29,12 @@ class Paiement(models.Model):
         null=True,
         blank=True,
         related_name="paiements"
+    )
+
+    commandes = models.ManyToManyField(
+        "commandes.Commande",
+        related_name="paiements",
+        blank=True
     )
 
     type_paiement = models.CharField(
@@ -47,11 +47,12 @@ class Paiement(models.Model):
         decimal_places=2
     )
 
-    moyen_paiement = models.CharField(
-        max_length=30,
-        choices=MOYEN_CHOICES,
+    moyen_paiement = models.ForeignKey(
+        "categories.MoyenPaiement",
+        on_delete=models.SET_NULL,
         null=True,
-        blank=True
+        blank=True,
+        related_name="paiements"
     )
 
     statut = models.CharField(
@@ -93,6 +94,66 @@ class Paiement(models.Model):
         verbose_name = "Paiement"
         verbose_name_plural = "Paiements"
         ordering = ["-date_creation"]
+
+    def __str__(self):
+        return f"{self.reference} - {self.montant} FCFA"
+    
+    
+class Reversement(models.Model):
+    
+    STATUT_CHOICES = [
+        ("EN_ATTENTE", "En attente"),
+        ("EN_COURS", "En cours"),
+        ("VERSE", "Versé"),
+        ("ECHEC", "Échec"),
+    ]
+
+    commande = models.OneToOneField(
+        "commandes.Commande",
+        on_delete=models.PROTECT,
+        related_name="reversement",
+    )
+
+    agronome = models.ForeignKey(
+        "utilisateurs.Utilisateur",
+        on_delete=models.PROTECT,
+        related_name="reversements",
+    )
+
+    compte_reversement = models.ForeignKey(
+        "utilisateurs.CompteReversement",
+        on_delete=models.PROTECT,
+        related_name="reversements",
+    )
+
+    montant = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+    )
+
+    reference = models.CharField(
+        max_length=100,
+        unique=True,
+    )
+
+    statut = models.CharField(
+        max_length=20,
+        choices=STATUT_CHOICES,
+        default="EN_ATTENTE",
+    )
+
+    date_creation = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    date_execution = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
+    date_modification = models.DateTimeField(
+        auto_now=True
+    )
 
     def __str__(self):
         return f"{self.reference} - {self.montant} FCFA"

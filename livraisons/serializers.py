@@ -5,6 +5,7 @@ from .models import (
     ParametreLivraison,
     ConfigurationLivraisonBoutique,
     ContactLivreur,
+    TarifLivraisonDistance,
 )
 
 
@@ -41,15 +42,16 @@ class ParametreLivraisonSerializer(serializers.ModelSerializer):
 
 
 class ConfigurationLivraisonBoutiqueSerializer(serializers.ModelSerializer):
-    
+
     class Meta:
         model = ConfigurationLivraisonBoutique
 
         fields = [
             "id",
             "boutique",
-            "livraison_par_acheteur",
-            "livraison_par_agronome",
+            "modes_livraison",
+            "type_tarification",
+            "frais_livraison_fixe",
             "nombre_max_commandes_par_livreur",
             "regroupement_automatique",
             "date_modification",
@@ -60,8 +62,24 @@ class ConfigurationLivraisonBoutiqueSerializer(serializers.ModelSerializer):
             "boutique",
             "date_modification",
         ]
+
+    def validate_modes_livraison(self, modes):
+        """
+        Vérifie que l'agronome ne sélectionne
+        que des modes activés par MBAAY.
+        """
+        modes_inactifs = modes.filter(active=False)
+
+        if modes_inactifs.exists():
+            raise serializers.ValidationError(
+                "Vous ne pouvez pas sélectionner un mode de livraison désactivé par MBAAY."
+            )
+
+        return modes
+
+
 class ContactLivreurSerializer(serializers.ModelSerializer):
-    
+
     class Meta:
         model = ContactLivreur
 
@@ -78,4 +96,23 @@ class ContactLivreurSerializer(serializers.ModelSerializer):
             "id",
             "boutique",
             "date_creation",
+        ]
+
+
+class TarifLivraisonDistanceSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = TarifLivraisonDistance
+
+        fields = [
+            "id",
+            "configuration",
+            "distance_min_km",
+            "distance_max_km",
+            "montant",
+        ]
+
+        read_only_fields = [
+            "id",
+            "configuration",
         ]

@@ -6,6 +6,8 @@ from .views import (
     ParametreLivraisonViewSet,
     ConfigurationLivraisonBoutiqueViewSet,
     ContactLivreurViewSet,
+    TarifLivraisonDistanceViewSet,
+    LivraisonBoutiquePubliqueView,
 )
 
 
@@ -34,8 +36,19 @@ router.register(
     ContactLivreurViewSet,
     basename="contacts-livreurs"
 )
+router.register(
+    r"tarifs-distance",
+    TarifLivraisonDistanceViewSet,
+    basename="tarif-distance"
+)
 
 
 urlpatterns = [
+    path(
+        "boutiques/<int:boutique_id>/",
+        LivraisonBoutiquePubliqueView.as_view(),
+        name="livraison-boutique-publique"
+    ),
+
     path("", include(router.urls)),
 ]

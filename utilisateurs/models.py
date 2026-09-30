@@ -14,7 +14,10 @@ class UtilisateurManager(BaseUserManager):
             nom=nom,
             prenom=prenom,
             telephone=telephone,
-            role=role,
+            role="AGRONOME",
+            is_staff=False,
+            is_superuser=False,
+            is_active=True,
         )
 
         user.set_unusable_password()
@@ -67,7 +70,7 @@ class Utilisateur(AbstractBaseUser, PermissionsMixin):
     )
 
     date_creation = models.DateTimeField(auto_now_add=True)
-
+    email_verifie = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
 
@@ -83,3 +86,89 @@ class Utilisateur(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return f"{self.prenom} {self.nom}"
+
+
+class VerificationEmail(models.Model):
+    
+    utilisateur = models.OneToOneField(
+        Utilisateur,
+        on_delete=models.CASCADE,
+        related_name="verification_email"
+    )
+
+    token = models.CharField(
+        max_length=255,
+        unique=True
+    )
+
+    date_creation = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    date_expiration = models.DateTimeField()
+
+    utilise = models.BooleanField(
+        default=False
+    )
+
+    def __str__(self):
+        return f"Vérification email - {self.utilisateur.email}"
+    
+    
+class LienConnexion(models.Model):
+    
+    utilisateur = models.ForeignKey(
+        Utilisateur,
+        on_delete=models.CASCADE,
+        related_name="liens_connexion"
+    )
+
+    token = models.CharField(
+        max_length=255,
+        unique=True
+    )
+
+    date_creation = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    date_expiration = models.DateTimeField()
+
+    utilise = models.BooleanField(
+        default=False
+    )
+
+    def __str__(self):
+        return f"Lien connexion - {self.utilisateur.email}"    
+
+
+
+class CompteReversement(models.Model):
+    utilisateur = models.OneToOneField(
+        "utilisateurs.Utilisateur",
+        on_delete=models.CASCADE,
+        related_name="compte_reversement",
+    )
+
+    account_alias = models.CharField(
+        max_length=255,
+        unique=True,
+    )
+
+    actif = models.BooleanField(
+        default=True
+    )
+
+    date_creation = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    date_modification = models.DateTimeField(
+        auto_now=True
+    )
+
+    def __str__(self):
+        return (
+            f"{self.utilisateur} - "
+            f"{self.account_alias}"
+        )

@@ -1,5 +1,6 @@
 from django.db import models
-
+from decimal import Decimal
+from django.core.validators import MinValueValidator
 
 class ModeLivraison(models.Model):
     """
@@ -74,21 +75,36 @@ class ConfigurationLivraisonBoutique(models.Model):
     L'agronome choisit ici les modes de livraison qu'il souhaite
     proposer parmi ceux autorisés par MBAAY.
     """
-
+    TYPE_TARIFICATION_CHOICES = [
+        ("FIXE", "Tarif fixe"),
+        ("DISTANCE", "Tarif selon la distance"),
+        ]
     boutique = models.OneToOneField(
         "boutiques.Boutique",
         on_delete=models.CASCADE,
         related_name="configuration_livraison"
     )
+    
 
-    livraison_par_acheteur = models.BooleanField(
-        default=False
+    modes_livraison = models.ManyToManyField(
+        ModeLivraison,
+        blank=True,
+        related_name="configurations_boutiques"
+    )
+    type_tarification = models.CharField(
+       max_length=20,
+       choices=TYPE_TARIFICATION_CHOICES,
+       default="FIXE"
     )
 
-    livraison_par_agronome = models.BooleanField(
-        default=False
-    )
-
+    frais_livraison_fixe = models.DecimalField(
+       max_digits=10,
+       decimal_places=2,
+       default=Decimal("0.00"),
+        validators=[
+        MinValueValidator(Decimal("0.00"))
+    ]
+)
     nombre_max_commandes_par_livreur = models.PositiveIntegerField(
         default=5
     )
@@ -146,3 +162,44 @@ class ContactLivreur(models.Model):
 
     def __str__(self):
         return f"{self.nom} - {self.telephone}"
+    
+class TarifLivraisonDistance(models.Model):
+    configuration = models.ForeignKey(
+        ConfigurationLivraisonBoutique,
+        on_delete=models.CASCADE,
+        related_name="tarifs_distance"
+    )
+
+    distance_min_km = models.DecimalField(
+        max_digits=6,
+        decimal_places=2,
+        validators=[
+            MinValueValidator(Decimal("0.00"))
+        ]
+    )
+
+    distance_max_km = models.DecimalField(
+        max_digits=6,
+        decimal_places=2,
+        validators=[
+            MinValueValidator(Decimal("0.00"))
+        ]
+    )
+
+    montant = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        validators=[
+            MinValueValidator(Decimal("0.00"))
+        ]
+    )
+
+    class Meta:
+        ordering = ["distance_min_km"]
+
+    def __str__(self):
+        return (
+            f"{self.distance_min_km} - "
+            f"{self.distance_max_km} km : "
+            f"{self.montant} FCFA"
+        )

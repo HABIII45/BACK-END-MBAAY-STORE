@@ -6,6 +6,7 @@ from .models import (
     ParametreLivraison,
     ConfigurationLivraisonBoutique,
     ContactLivreur,
+    TarifLivraisonDistance,
 )
 
 from .serializers import (
@@ -13,13 +14,21 @@ from .serializers import (
     ParametreLivraisonSerializer,
     ConfigurationLivraisonBoutiqueSerializer,
     ContactLivreurSerializer,
+    TarifLivraisonDistanceSerializer
 )
+
 
 from .permissions import (
     IsAdminMBAAY,
+    IsAgronomeMBAAY,
 )
 
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import AllowAny
+from django.shortcuts import get_object_or_404
 
+from boutiques.models import Boutique
 # ============================================================
 # MODES DE LIVRAISON
 # ============================================================
@@ -108,14 +117,9 @@ class ParametreLivraisonViewSet(viewsets.ModelViewSet):
 
 class ConfigurationLivraisonBoutiqueViewSet(viewsets.ModelViewSet):
     serializer_class = ConfigurationLivraisonBoutiqueSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated,IsAgronomeMBAAY,]
 
     def get_queryset(self):
-        """
-        Chaque agronome ne voit que la configuration
-        de sa propre boutique.
-        """
-
         user = self.request.user
 
         if user.role == "ADMIN":
@@ -126,25 +130,25 @@ class ConfigurationLivraisonBoutiqueViewSet(viewsets.ModelViewSet):
         )
 
     def perform_create(self, serializer):
-        """
-        La boutique est automatiquement déterminée
-        à partir de l'utilisateur connecté.
-        """
-
         user = self.request.user
 
         if user.role != "AGRONOME":
             raise PermissionDenied(
-              "Seul un agronome peut configurer la livraison de sa boutique."
+                "Seul un agronome peut configurer la livraison de sa boutique."
             )
 
         boutique = user.boutique
 
+        if ConfigurationLivraisonBoutique.objects.filter(
+            boutique=boutique
+        ).exists():
+            raise PermissionDenied(
+                "La configuration de livraison de cette boutique existe déjà."
+            )
+
         serializer.save(
             boutique=boutique
         )
-
-
 # ============================================================
 # CONTACTS DES LIVREURS
 # ============================================================
@@ -185,4 +189,94 @@ class ContactLivreurViewSet(viewsets.ModelViewSet):
 
         serializer.save(
             boutique=boutique
+        )
+        
+class TarifLivraisonDistanceViewSet(viewsets.ModelViewSet):
+    serializer_class = TarifLivraisonDistanceSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+
+        if user.role != "AGRONOME":
+            return TarifLivraisonDistance.objects.none()
+
+        return TarifLivraisonDistance.objects.filter(
+            configuration__boutique__proprietaire=user
+        )
+
+    def perform_create(self, serializer):
+        user = self.request.user
+
+        if user.role != "AGRONOME":
+            raise PermissionDenied(
+                "Seul un agronome peut gérer ses tarifs de livraison."
+            )
+
+        try:
+            configuration = user.boutique.configuration_livraison
+        except ConfigurationLivraisonBoutique.DoesNotExist:
+            raise PermissionDenied(
+                "Vous devez d'abord créer votre configuration de livraison."
+            )
+
+        serializer.save(
+            configuration=configuration
+        )
+        
+        
+        
+        
+class LivraisonBoutiquePubliqueView(APIView):
+    """
+    Informations de livraison accessibles à l'acheteur
+    pour une boutique publiée.
+    """
+
+    permission_classes = [AllowAny]
+
+    def get(self, request, boutique_id):
+
+        boutique = get_object_or_404(
+            Boutique,
+            id=boutique_id,
+            statut="PUBLIEE"
+        )
+
+        try:
+            configuration = (
+                ConfigurationLivraisonBoutique.objects
+                .prefetch_related("modes_livraison")
+                .get(boutique=boutique)
+            )
+        except ConfigurationLivraisonBoutique.DoesNotExist:
+            return Response(
+                {
+                    "message": (
+                        "Cette boutique ne possède pas encore "
+                        "de configuration de livraison."
+                    )
+                },
+                status=404
+            )
+
+        modes = configuration.modes_livraison.filter(
+            active=True
+        )
+
+        return Response(
+            {
+                "boutique": boutique.id,
+                "type_tarification": configuration.type_tarification,
+                "frais_livraison_fixe": configuration.frais_livraison_fixe,
+                "modes_livraison": [
+                    {
+                        "id": mode.id,
+                        "nom": mode.nom,
+                        "code": mode.code,
+                        "description": mode.description,
+                    }
+                    for mode in modes
+                ],
+            }
         )
